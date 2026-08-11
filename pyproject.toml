@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lyot"
+version = "0.0.1"
+description = "Learn Your Own Thoughts — unsupervised continuous chain-of-thought via a difficulty curriculum"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = [
+    # These are the versions every reported number was measured with. transformers is held at
+    # 4.46.2 rather than 5.x: lyot/coconut.py handles either cache API, but the pin keeps the
+    # measured environment reproducible. torch comes from the CUDA wheel index at install
+    # time and is not pinned here.
+    "torch>=2.5",
+    "transformers==4.46.2",
+    "numpy==2.1.3",
+    "datasets==3.1.0",
+    "wandb>=0.25",   # not pinned to upstream: logging only, no effect on training
+    "tqdm==4.67.0",
+    "networkx>=3.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+# Plotting / analysis (thoughtformer imports these but omits them from its requirements).
+analysis = ["matplotlib>=3.7", "pandas>=2.0", "scipy>=1.11"]
+
+[tool.setuptools.packages.find]
+include = ["lyot*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

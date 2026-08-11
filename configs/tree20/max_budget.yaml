@@ -1,0 +1,65 @@
+# Control: the difficulty curriculum with the latent budget held at its maximum.
+#
+# `budget: max` grants each instance the budget it would get at the FINAL stage --
+# min(difficulty-1, max_latent_stage) -- from the first epoch, while the question's
+# depth still follows the stage. So the data curriculum is intact and the budget
+# curriculum is removed.
+#
+# This is the third of three controls, and the one that isolates the coupling:
+#   no_curriculum.yaml    neither curriculum: full depth, full budget, from the start
+#   data_curriculum.yaml  difficulty grows, NO latents at all (c_thought: 0)
+#   this file             difficulty grows, latents constant at the maximum
+# Together they answer whether the budget has to grow *with* difficulty, or merely has
+# to be sufficient. Evaluation is identical across all of them, so the arms differ only
+# in what training saw.
+project: lyot-curriculum
+save_path: runs
+
+tasks:
+  family: random_tree
+  arms: 2
+  length: 5
+  targets: deepest
+  n_train: 100000
+  n_valid: 1000
+  n: 20
+n_nodes: 40          # node ids 0..39: 20 per component, two components
+
+model:
+  n_layer: 2
+  n_head: 8
+  n_embd: 768
+  n_positions: 1024
+
+curriculum: ring
+method: atc
+method_options:
+  answer_mark: false
+  hidden_prob: 0.75  # candidate dropout: the answer cannot be copied from the prompt
+  budget: max        # the whole point of this arm
+loss: ce
+max_latent_stage: 16
+c_thought: 1
+uniform_prob: 0.1
+
+num_epochs: 800
+batch_size_training: 128
+gradient_accumulation_steps: 1
+lr: 3.0e-5
+weight_decay: 0.01
+seed: 0
+max_grad_norm: 0     # every tree20 number so far was measured with clipping off
+reset_optimizer: false
+shuffle_nodes: false
+grow_task_difficulty: false
+
+eval_every: 1
+save_every: 50
+wandb: true
+
+staging: revisit
+stop_when_complete: true
+
+group: tree20-controls
+name: tree20-maxbudget
+tags: ["tree20", "control", "max-budget"]

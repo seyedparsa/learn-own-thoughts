@@ -1,0 +1,77 @@
+# Coconut gated on set accuracy over its intermediate prediction.
+#
+# Twin random trees, n=20 per component. The task, model, optimizer and seed below are
+# copied verbatim from the ATC arm this is compared against,
+# `tree20-n20-fp-mls16-ce-resetF-noclip-thrcur-bpfull-up0.1-d100k-pat1`, so all four
+# baselines and ATC see the SAME train, validation and test graphs and differ only in
+# what is supervised and what moves the curriculum. Keep the shared block in sync across
+# configs/tree20/* -- there is no include mechanism, so it is duplicated on purpose.
+#
+# The `arms`/`length`/`targets` keys are vestigial (inherited from the star lineage):
+# `random_tree` swallows the first two and `targets: deepest` is already the default.
+# They are kept because dropping them would make this look like a different spec than
+# the run already on disk.
+#
+# The same supervision as coconut_clock.yaml, but staged on evidence rather than a
+# clock -- and the evidence has to be a metric of the FORCED INTERMEDIATE prediction,
+# because that is what this method's objective produces. Exact match against one drawn
+# frontier member caps at E[1/|F_d|], so a 0.9 gate on `acc` is unreachable however well
+# the frontier was learned; `staging_metric: set_acc` credits naming any member and
+# ranges over the full 0..1.
+#
+# Gate parameters match the ATC arm exactly (threshold 0.9, patience 1, advance-only),
+# so the only difference from it is what is supervised and which quantity is
+# thresholded. That is the comparison.
+project: lyot-curriculum
+save_path: runs
+
+tasks:
+  family: random_tree
+  arms: 2
+  length: 5
+  targets: deepest
+  n_train: 100000
+  n_valid: 1000
+  n: 20
+n_nodes: 40          # node ids 0..39: 20 per component, two components
+
+model:
+  n_layer: 2
+  n_head: 8
+  n_embd: 768
+  n_positions: 1024
+
+num_epochs: 300
+batch_size_training: 128
+gradient_accumulation_steps: 1
+lr: 3.0e-5
+weight_decay: 0.01
+seed: 0
+max_grad_norm: 0     # every tree20 number so far was measured with clipping off
+reset_optimizer: false
+shuffle_nodes: false
+grow_task_difficulty: false
+
+eval_every: 1
+save_every: 100
+wandb: true
+group: tree20-baselines
+
+method: coconut
+curriculum: ring
+loss: ce
+
+epochs_per_stage: 5   # unused under adaptive staging; kept so stage_at is well-defined
+first_stage_epochs: 0
+max_latent_stage: 16
+c_thought: 1
+uniform_prob: 0.1     # same rehearsal fraction as the ATC arm
+
+staging: threshold    # advance-only: consult the current stage alone
+staging_metric: set_acc
+staging_threshold: 0.9
+staging_patience: 1
+stop_when_complete: true
+
+name: tree20-n20-coconut-ring-setacc-mls16-up0.1-d100k-pat1
+tags: ["tree20", "baseline", "coconut", "setacc"]

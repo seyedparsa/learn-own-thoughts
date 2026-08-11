@@ -1,0 +1,59 @@
+# Control: the difficulty curriculum with no continuous thoughts.
+#
+# `c_thought: 0` renders zero latent tokens at every stage, so the stage index
+# still selects the question's depth -- the data curriculum survives intact -- while
+# the latent chain it is supposed to elicit is removed. Together with
+# no_curriculum.yaml this separates the two things ATC does: ordering the data, and
+# giving the model somewhere to compute.
+project: lyot-curriculum
+save_path: runs
+
+tasks:
+  family: random_tree
+  arms: 2
+  length: 5
+  targets: deepest
+  n_train: 100000
+  n_valid: 1000
+  n: 20
+n_nodes: 40          # node ids 0..39: 20 per component, two components
+
+model:
+  n_layer: 2
+  n_head: 8
+  n_embd: 768
+  n_positions: 1024
+
+curriculum: ring
+method: atc
+method_options:
+  answer_mark: false
+  hidden_prob: 0.75  # candidate dropout: the answer cannot be copied from the prompt
+  budget: depth-1    # a d-hop question is answered with d-1 latents
+loss: ce
+max_latent_stage: 16
+c_thought: 1
+uniform_prob: 0.1
+
+num_epochs: 800
+batch_size_training: 128
+gradient_accumulation_steps: 1
+lr: 3.0e-5
+weight_decay: 0.01
+seed: 0
+max_grad_norm: 0     # every tree20 number so far was measured with clipping off
+reset_optimizer: false
+shuffle_nodes: false
+grow_task_difficulty: false
+
+eval_every: 1
+save_every: 50
+wandb: true
+
+c_thought: 0
+staging: revisit
+stop_when_complete: true
+
+group: tree20-controls
+name: tree20-datacurriculum
+tags: ["tree20", "control", "data-curriculum"]

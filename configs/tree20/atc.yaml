@@ -1,0 +1,60 @@
+# ATC on twin random trees, n=20 -- the main arm.
+#
+# Staging defaults now come from the code (threshold 0.98, patience 1,
+# min_epochs 1) rather than from a config, so they are NOT restated here: an arm
+# that pins them silently stops tracking the default. `staging` and
+# `backprop_last` are set per arm on the command line, which is what makes the
+# staging x truncation grid one file.
+#
+# The task, model and optimizer block is shared verbatim with configs/tree20/*,
+# so every arm and baseline sees the same train, validation and test graphs.
+project: lyot-curriculum
+save_path: runs
+
+tasks:
+  family: random_tree
+  arms: 2
+  length: 5
+  targets: deepest
+  n_train: 100000
+  n_valid: 1000
+  n: 20
+n_nodes: 40          # node ids 0..39: 20 per component, two components
+
+model:
+  n_layer: 2
+  n_head: 8
+  n_embd: 768
+  n_positions: 1024
+
+curriculum: ring
+method: atc
+method_options:
+  answer_mark: false
+  hidden_prob: 0.75  # candidate dropout: the answer cannot be copied from the prompt
+  budget: depth-1    # a d-hop question is answered with d-1 latents
+loss: ce
+max_latent_stage: 16
+c_thought: 1
+uniform_prob: 0.1
+
+num_epochs: 800
+batch_size_training: 128
+gradient_accumulation_steps: 1
+lr: 3.0e-5
+weight_decay: 0.01
+seed: 0
+max_grad_norm: 0     # every tree20 number so far was measured with clipping off
+reset_optimizer: false
+shuffle_nodes: false
+grow_task_difficulty: false
+
+eval_every: 1
+save_every: 50
+wandb: true
+
+stop_when_complete: true
+
+group: tree20-thr98
+name: tree20-atc
+tags: ["tree20", "atc"]

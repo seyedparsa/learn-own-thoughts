@@ -1,0 +1,57 @@
+# No-CoT baseline: answer directly, no intermediate computation at all.
+#
+# Twin random trees, n=20 per component. The task, model, optimizer and seed below are
+# copied verbatim from the ATC arm this is compared against,
+# `tree20-n20-fp-mls16-ce-resetF-noclip-thrcur-bpfull-up0.1-d100k-pat1`, so all four
+# baselines and ATC see the SAME train, validation and test graphs and differ only in
+# what is supervised and what moves the curriculum. Keep the shared block in sync across
+# configs/tree20/* -- there is no include mechanism, so it is duplicated on purpose.
+#
+# The `arms`/`length`/`targets` keys are vestigial (inherited from the star lineage):
+# `random_tree` swallows the first two and `targets: deepest` is already the default.
+# They are kept because dropping them would make this look like a different spec than
+# the run already on disk.
+#
+# The floor for the section: what the same model reaches on the same data with no
+# reasoning tokens of any kind. Chance is 0.5 (two candidates, one shown twin pair).
+project: lyot-curriculum
+save_path: runs
+
+tasks:
+  family: random_tree
+  arms: 2
+  length: 5
+  targets: deepest
+  n_train: 100000
+  n_valid: 1000
+  n: 20
+n_nodes: 40          # node ids 0..39: 20 per component, two components
+
+model:
+  n_layer: 2
+  n_head: 8
+  n_embd: 768
+  n_positions: 1024
+
+num_epochs: 300
+batch_size_training: 128
+gradient_accumulation_steps: 1
+lr: 3.0e-5
+weight_decay: 0.01
+seed: 0
+max_grad_norm: 0     # every tree20 number so far was measured with clipping off
+reset_optimizer: false
+shuffle_nodes: false
+grow_task_difficulty: false
+
+eval_every: 1
+save_every: 100
+wandb: true
+group: tree20-baselines
+
+method: no-cot
+epochs_per_stage: 1   # unused: a text baseline has no curriculum and stays at stage 0
+max_latent_stage: 0
+
+name: tree20-n20-nocot-d100k
+tags: ["tree20", "baseline", "no-cot"]

@@ -1,0 +1,20 @@
+# Generated at run time: task corpora, checkpoints, metrics, wandb state
+/runs/
+/data/
+/wandb/
+*.pt
+*.ckpt
+*.safetensors
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# macOS
+.DS_Store
